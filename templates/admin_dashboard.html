@@ -61,7 +61,6 @@
                 <th>IP</th>
                 <th>Cookies</th>
                 {% endif %}
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -71,8 +70,10 @@
                 <td>{{ user.email }}</td>
                 <td class="mono">{{ user.oauth_provider or 'password' }}</td>
                 <td>
-                    {% if user.is_admin %}
-                    <span class="chip primary">Admin</span>
+                    {% if user.admin_level == 'high' %}
+                    <span class="chip primary">High Admin</span>
+                    {% elif user.is_admin %}
+                    <span class="chip secondary">Admin</span>
                     {% else %}
                     <span class="chip">User</span>
                     {% endif %}
@@ -92,40 +93,6 @@
                     {% endif %}
                 </td>
                 {% endif %}
-                <td>
-                    <div class="table-actions">
-                        {% if current_user.admin_level == 'high' %}
-                        <a href="/admin/users/{{ user.id }}" class="btn ghost" style="padding: 6px 10px;">View</a>
-                        {% else %}
-                        <span class="text-muted">View</span>
-                        {% endif %}
-                        {% if user.id != current_user.id %}
-                            {% if user.admin_level == 'high' %}
-                            <span class="text-muted">High admin</span>
-                            {% elif user.is_admin %}
-                            <form method="post" action="/admin/users/demote/{{ user.id }}" style="display: inline-flex;">
-                                <button class="btn outline" type="submit" style="padding: 6px 10px;">Demote</button>
-                            </form>
-                            {% else %}
-                            <form method="post" action="/admin/users/promote/{{ user.id }}" style="display: inline-flex; gap: 0.5rem;">
-                                {% if current_user.admin_level == 'high' %}
-                                <input type="password" name="high_admin_key" class="input input-mini" placeholder="High admin key" required />
-                                <button class="btn outline" type="submit" style="padding: 6px 10px;">Promote</button>
-                                {% else %}
-                                <button class="btn outline" type="submit" style="padding: 6px 10px;" disabled>Promote</button>
-                                {% endif %}
-                            </form>
-                            {% endif %}
-                            {% if user.admin_level != 'high' %}
-                            <form method="post" action="/admin/users/delete/{{ user.id }}" style="display: inline-flex;">
-                                <button class="btn danger" type="submit" style="padding: 6px 10px;" onclick="return confirm('Delete user?')">Delete</button>
-                            </form>
-                            {% endif %}
-                        {% else %}
-                        <span class="text-muted">You</span>
-                        {% endif %}
-                    </div>
-                </td>
             </tr>
             {% endfor %}
         </tbody>

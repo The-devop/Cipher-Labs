@@ -23,6 +23,12 @@ class Config:
     _db_url = os.environ.get("DATABASE_URL", "").strip()
     if _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    if _db_url.startswith("sqlite:///"):
+        sqlite_path = _db_url.replace("sqlite:///", "", 1)
+        if not os.path.isabs(sqlite_path):
+            sqlite_path = os.path.join(BASEDIR, sqlite_path)
+        os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
+        _db_url = "sqlite:///" + sqlite_path.replace("\\", "/")
     SQLALCHEMY_DATABASE_URI = _db_url or f"sqlite:///{os.path.join(INSTANCE_DIR, 'cipherlab.sqlite3')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
