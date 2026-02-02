@@ -17,8 +17,13 @@ class Config:
     
     # Get the instance directory
     BASEDIR = BASEDIR
-    INSTANCE_DIR = os.path.join(BASEDIR, "instance")
-    os.makedirs(INSTANCE_DIR, exist_ok=True)
+    _is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    INSTANCE_DIR = os.path.join(("/tmp" if _is_serverless else BASEDIR), "instance")
+    try:
+        os.makedirs(INSTANCE_DIR, exist_ok=True)
+    except OSError:
+        INSTANCE_DIR = os.path.join("/tmp", "instance")
+        os.makedirs(INSTANCE_DIR, exist_ok=True)
     
     _db_url = os.environ.get("DATABASE_URL", "").strip()
     if _db_url.startswith("postgres://"):
@@ -27,7 +32,10 @@ class Config:
         sqlite_path = _db_url.replace("sqlite:///", "", 1)
         if not os.path.isabs(sqlite_path):
             sqlite_path = os.path.join(BASEDIR, sqlite_path)
-        os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
+        try:
+            os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
+        except OSError:
+            sqlite_path = os.path.join(INSTANCE_DIR, os.path.basename(sqlite_path))
         _db_url = "sqlite:///" + sqlite_path.replace("\\", "/")
     SQLALCHEMY_DATABASE_URI = _db_url or f"sqlite:///{os.path.join(INSTANCE_DIR, 'cipherlab.sqlite3')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
