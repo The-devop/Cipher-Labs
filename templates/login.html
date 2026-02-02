@@ -1,0 +1,45 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}Login - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="panel auth-panel">
+        <h2 class="text-center">Sign In</h2>
+        <p class="text-center text-secondary">Access your Cipher Lab account and continue encrypting.</p>
+
+        <div class="oauth-buttons">
+            <a href="/auth/github" class="btn oauth github">
+                <span class="oauth-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#f8fafc" d="M12 2.5a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.8c-2.9.6-3.5-1.4-3.5-1.4-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.6 1.1 1.6 1.1 .9 1.6 2.4 1.1 3 .9 .1-.7.3-1.1.6-1.4-2.3-.3-4.8-1.2-4.8-5.4 0-1.2.4-2.1 1-2.9-.1-.3-.4-1.3.1-2.7 0 0 .9-.3 2.9 1.1a10 10 0 0 1 5.2 0c2-1.4 2.9-1.1 2.9-1.1 .5 1.4.2 2.4.1 2.7 .6.8 1 1.7 1 2.9 0 4.2-2.5 5.1-4.8 5.4 .4.3.7 1 .7 2v3c0 .3.2.6.7.5A9.5 9.5 0 0 0 12 2.5z"/></svg>
+                </span>
+                Continue with GitHub
+            </a>
+        </div>
+
+        <div class="divider"><span>or</span></div>
+
+        <form method="post">
+            <label>Username</label>
+            <input type="text" name="username" class="input" placeholder="Your username" required />
+
+            <label>Password</label>
+            <input type="password" name="password" class="input" placeholder="Your password" required />
+
+            <label class="checkbox">
+                <input type="checkbox" name="remember" />
+                <span>Remember me</span>
+            </label>
+
+            <button type="submit" class="btn primary full-width">Sign In with Email</button>
+        </form>
+
+        <p class="text-center text-secondary" style="margin-top: 1.5rem;">
+            Don't have an account? <a href="/register">Create one</a>
+        </p>
+
+        <div class="divider"><span>demo</span></div>
+        <p class="text-center text-muted" style="font-size: 0.9rem;">Demo account: <code>The X King</code> / <code>The Almighty X King</code></p>
+    </div>
+</div>
+{% endblock %}

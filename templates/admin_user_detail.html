@@ -1,0 +1,84 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}User Details - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header flex-between">
+        <div>
+            <h2>User Details</h2>
+            <p class="text-secondary">Track activity and preferences for {{ user.username }}.</p>
+        </div>
+        <a href="/admin" class="btn ghost">Back to Admin</a>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top: 2rem;">
+    <div class="panel">
+        <h4>Profile</h4>
+        <div class="kv-list">
+            <div class="kv-row"><span>Username</span><span>{{ user.username }}</span></div>
+            <div class="kv-row"><span>Email</span><span>{{ user.email }}</span></div>
+            <div class="kv-row"><span>Role</span><span>{% if user.is_admin %}Admin{% else %}User{% endif %}</span></div>
+            <div class="kv-row"><span>Admin Level</span><span>{{ user.admin_level or '-' }}</span></div>
+            <div class="kv-row"><span>Provider</span><span>{{ user.oauth_provider or 'password' }}</span></div>
+            <div class="kv-row"><span>Provider ID</span><span class="mono">{{ user.oauth_id or '-' }}</span></div>
+            <div class="kv-row"><span>Joined</span><span>{{ user.created_at.strftime("%Y-%m-%d") }}</span></div>
+            <div class="kv-row"><span>Last Login</span><span>{% if user.last_login_at %}{{ user.last_login_at.strftime("%Y-%m-%d %H:%M") }}{% else %}-{% endif %}</span></div>
+            <div class="kv-row"><span>Last Seen</span><span>{% if user.last_seen_at %}{{ user.last_seen_at.strftime("%Y-%m-%d %H:%M") }}{% else %}-{% endif %}</span></div>
+            <div class="kv-row"><span>Last IP</span><span class="mono">{{ user.last_login_ip or '-' }}</span></div>
+            <div class="kv-row"><span>Seen IP</span><span class="mono">{{ user.last_seen_ip or '-' }}</span></div>
+            <div class="kv-row"><span>User Agent</span><span class="mono">{{ user.last_login_user_agent or '-' }}</span></div>
+            <div class="kv-row"><span>Seen Agent</span><span class="mono">{{ user.last_seen_user_agent or '-' }}</span></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h4>Cookie Preferences</h4>
+        {% if cookie_pref %}
+        <div class="kv-list">
+            <div class="kv-row"><span>Choice</span><span>{{ cookie_pref.choice }}</span></div>
+            <div class="kv-row"><span>Essential</span><span>{{ 'Yes' if cookie_pref.essential else 'No' }}</span></div>
+            <div class="kv-row"><span>Functional</span><span>{{ 'Yes' if cookie_pref.functional else 'No' }}</span></div>
+            <div class="kv-row"><span>Analytics</span><span>{{ 'Yes' if cookie_pref.analytics else 'No' }}</span></div>
+            <div class="kv-row"><span>Marketing</span><span>{{ 'Yes' if cookie_pref.marketing else 'No' }}</span></div>
+            <div class="kv-row"><span>Updated</span><span>{{ cookie_pref.updated_at.strftime("%Y-%m-%d %H:%M") }}</span></div>
+        </div>
+        {% else %}
+        <p class="text-muted">No cookie preferences recorded.</p>
+        {% endif %}
+    </div>
+</div>
+
+<h3 class="section-title">Activity Logs</h3>
+<div class="panel">
+    {% if logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Cipher</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>IP</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.action }}</td>
+                <td class="mono">{{ log.cipher_name }}</td>
+                <td>{{ log.input_length }}</td>
+                <td>{% if log.success %}OK{% else %}Fail{% endif %}</td>
+                <td class="mono">{{ log.ip_address or '-' }}</td>
+                <td class="text-muted">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center" style="padding: 2rem;">No activity yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

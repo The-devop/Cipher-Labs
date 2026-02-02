@@ -1,0 +1,7 @@
+﻿Flask
+Flask-Login
+Flask-SQLAlchemy
+python-dotenv
+Authlib
+cryptography
+gunicorn

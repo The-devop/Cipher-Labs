@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+
+{% block title %}AES-GCM Encryption - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <h2>AES-GCM Encryption</h2>
+            <p class="text-secondary">
+                Modern authenticated encryption. Password-based key derivation (Scrypt) + AES-256-GCM.
+                This is real, cryptographically secure encryption.
+            </p>
+        </div>
+        <a href="/dashboard" class="btn ghost">← Back</a>
+    </div>
+
+    <div id="status" style="display: none;"></div>
+
+    <div class="cipher-interface">
+        <!-- Encryption -->
+        <div class="cipher-controls">
+            <h4>Encryption</h4>
+
+            <label>Password</label>
+            <input type="password" id="aesPassword" class="input" placeholder="Use a strong password (6+ chars)" />
+
+            <label style="margin-top: 1rem;">Plain Text</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>Text to encrypt</span>
+                    <span id="aesText-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="aesText" placeholder="Your secret message..."></textarea>
+            </div>
+
+            <button class="btn primary" onclick="aesEncrypt()" style="width: 100%;">
+                Encrypt
+            </button>
+
+            <label style="margin-top: 1rem;">📦 Bundle (save this)</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>JSON bundle with salt, nonce, and ciphertext</span>
+                    <span id="aesBundle-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="aesBundle" placeholder='{"salt_b64":"...","nonce_b64":"...","ciphertext_b64":"..."}'
+                    readonly></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn success" onclick="copyToClipboard('aesBundle')">📋 Copy Bundle</button>
+                <button class="btn outline" onclick="exportAsJSON('aesBundle', 'aes-encrypted')">Save Bundle</button>
+            </div>
+        </div>
+
+        <!-- Decryption -->
+        <div class="cipher-controls">
+            <h4>🔓 Decryption</h4>
+
+            <label>Password</label>
+            <input type="password" id="aesPassword" class="input" placeholder="Same password as encryption" />
+
+            <label style="margin-top: 1rem;">📦 Bundle (paste here)</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>JSON bundle from encryption</span>
+                    <span id="aesBundleDecrypt-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="aesBundle" placeholder="Paste your saved bundle here..."></textarea>
+            </div>
+
+            <button class="btn primary" onclick="aesDecrypt()" style="width: 100%;">
+                Decrypt
+            </button>
+
+            <label style="margin-top: 1rem;">Result</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>Decrypted message</span>
+                    <span id="aesResult-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="aesResult" readonly placeholder="Decrypted text will appear here..."></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn success" onclick="copyToClipboard('aesResult')">📋 Copy</button>
+                <button class="btn outline" onclick="clearTextarea('aesResult')">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info -->
+    <div
+        style="margin-top: 2rem; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border-left: 4px solid var(--success);">
+        <h4 style="color: var(--success); margin-top: 0;">Real Encryption</h4>
+        <ul style="color: var(--text-secondary); margin: 0.5rem 0 0 0;">
+            <li><strong>Algorithm:</strong> AES-256-GCM (authenticated encryption)</li>
+            <li><strong>Key derivation:</strong> Scrypt with parameters n=2^14, r=8, p=1</li>
+            <li><strong>Random salt:</strong> 16 bytes per encryption</li>
+            <li><strong>Random nonce:</strong> 12 bytes per encryption</li>
+            <li><strong>Strength:</strong> Depends on password quality. Use 12+ characters for good security.</li>
+        </ul>
+    </div>
+
+    <div
+        style="margin-top: 1rem; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; border-left: 4px solid var(--warning);">
+        <h4 style="color: var(--warning); margin-top: 0;">Important Notes</h4>
+        <ul style="color: var(--text-secondary); margin: 0.5rem 0 0 0;">
+            <li>Save your bundle JSON safely if you want to decrypt later</li>
+            <li>Password cannot be recovered if forgotten</li>
+            <li>Each encryption generates new random salt and nonce</li>
+            <li>Don't share passwords through unsecured channels</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        updateCharCount("aesText");
+        updateCharCount("aesBundle");
+        updateCharCount("aesResult");
+    });
+</script>
+{% endblock %}

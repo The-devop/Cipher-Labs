@@ -1,0 +1,135 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}{{ cipher.name }} - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <h2>{{ cipher.name }}</h2>
+            <p class="text-secondary">{{ cipher.description }}</p>
+        </div>
+        <a href="/dashboard" class="btn ghost">Back to Dashboard</a>
+    </div>
+
+    {% if not supported %}
+    <div class="alert warning">
+        This cipher is catalog-only and does not yet have interactive encryption support.
+    </div>
+    {% endif %}
+
+    <div id="status" style="display: none;"></div>
+
+    <div class="cipher-interface">
+        <div class="cipher-controls">
+            <h4>Settings</h4>
+
+            {% set params = cipher_info.get('params', []) %}
+            {% set param_types = cipher_info.get('param_types', {}) %}
+
+            {% if params %}
+                {% for param in params %}
+                    <label>{{ param.replace('_', ' ')|title }}</label>
+                    {% if param_types.get(param) == 'number' %}
+                        <input type="number" data-param="{{ param }}" data-type="number" class="input" value="{{ param_defaults.get(param, 0) }}" />
+                    {% else %}
+                        <input type="text" data-param="{{ param }}" data-type="text" class="input" value="{{ param_defaults.get(param, '') }}" {% if param == 'key' %}placeholder="KEYWORD"{% endif %} />
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="text-muted" style="margin-bottom: 1rem;">No parameters required.</p>
+            {% endif %}
+
+            <label style="margin-top: 1.5rem;">Plain Text</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>Enter text to encrypt or decrypt</span>
+                    <span id="plaintext-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="plaintext" placeholder="Your message here..." {% if not supported %}disabled{% endif %}></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn primary" onclick="encryptWithCipher('{{ cipher.slug }}')" {% if not supported %}disabled{% endif %}>Encrypt</button>
+                <button class="btn secondary" onclick="decryptWithCipher('{{ cipher.slug }}')" {% if not supported %}disabled{% endif %}>Decrypt</button>
+                <button class="btn outline" onclick="clearTextarea('plaintext')">Clear</button>
+            </div>
+        </div>
+
+        <div class="cipher-controls">
+            <label>Result</label>
+            <div class="textarea-wrapper">
+                <div class="textarea-label">
+                    <span>Encrypted or decrypted output</span>
+                    <span id="result-count" class="char-count">0 characters</span>
+                </div>
+                <textarea id="result" readonly></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn success" onclick="copyToClipboard('result')">Copy Result</button>
+                <button class="btn outline" onclick="clearTextarea('result')">Clear</button>
+                <button class="btn ghost" onclick="exportAsJSON('result', '{{ cipher.slug }}')">Export</button>
+            </div>
+
+            <div class="alert info" style="margin-top: 1rem;">
+                <strong>Tip:</strong> Classic ciphers are for learning. For real security, use <a href="/aes">AES-GCM</a>.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel" style="margin-top: 2rem;">
+    <h3>Integration Snippets</h3>
+    <p class="text-secondary">Use the API endpoints below to integrate this cipher into your own code.</p>
+    <div class="grid-2" style="margin-top: 1rem;">
+        <div class="panel">
+            <h4>cURL</h4>
+            <pre><code>curl -X POST http://localhost:5000/api/encrypt \
+  -H "Content-Type: application/json" \
+  -d '{"slug":"{{ cipher.slug }}","text":"HELLO","params":{ {% for param in params %}"{{ param }}":"{{ param_defaults.get(param, '') }}"{% if not loop.last %}, {% endif %}{% endfor %} }}'</code></pre>
+        </div>
+        <div class="panel">
+            <h4>JavaScript (fetch)</h4>
+            <pre><code>fetch("/api/encrypt", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    slug: "{{ cipher.slug }}",
+    text: "HELLO",
+    params: { {% for param in params %}{{ param }}: "{{ param_defaults.get(param, '') }}"{% if not loop.last %}, {% endif %}{% endfor %} }
+  })
+}).then(r => r.json()).then(console.log);</code></pre>
+        </div>
+        <div class="panel">
+            <h4>Python (requests)</h4>
+            <pre><code>import requests
+
+payload = {
+    "slug": "{{ cipher.slug }}",
+    "text": "HELLO",
+    "params": { {% for param in params %}"{{ param }}": "{{ param_defaults.get(param, '') }}"{% if not loop.last %}, {% endif %}{% endfor %} }
+}
+
+r = requests.post("http://localhost:5000/api/encrypt", json=payload)
+print(r.json())</code></pre>
+        </div>
+        <div class="panel">
+            <h4>Decrypt Endpoint</h4>
+            <pre><code>POST /api/decrypt
+{
+  "slug": "{{ cipher.slug }}",
+  "text": "CIPHERTEXT",
+  "params": { ... }
+}</code></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        updateCharCount("plaintext");
+        updateCharCount("result");
+    });
+</script>
+{% endblock %}

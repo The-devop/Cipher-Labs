@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Cipher Lab{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+    <!-- Welcome Modal Popup -->
+    <div id="welcomeModal" class="modal fade-in">
+        <div class="modal-content scale-in">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header">
+                <h2>Welcome to Cipher Lab</h2>
+            </div>
+            <div class="modal-body">
+                <p>Discover 1,200+ cryptographic ciphers and encryption variants.</p>
+                <p>Learn how encryption works, experiment with different algorithms, and master the art of secure
+                    communication.</p>
+                <ul>
+                    <li>Classic ciphers (Caesar, Vigenère, Playfair)</li>
+                    <li>Modern encryption (AES-256-GCM)</li>
+                    <li>Encoding methods (Base64, Hex, Binary)</li>
+                    <li>Thousands of fixed-key variants and catalog entries</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="btn primary" id="welcomeClose">Get Started</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookieConsent" class="cookie-banner fade-in">
+        <div class="cookie-content">
+            <div class="cookie-text">
+                <h3>Cookie Settings</h3>
+                <p>We use different types of cookies to enhance your experience. You can manage your preferences below.
+                </p>
+            </div>
+            <div class="cookie-buttons">
+                <button class="btn ghost" id="cookieManageSettings">Manage Settings</button>
+                <button class="btn primary" id="cookieAccept">Accept All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Settings Modal -->
+    <div id="cookieSettingsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="cookieSettingsClose">&times;</button>
+            <div class="modal-header">
+                <h2>Cookie Preferences</h2>
+            </div>
+            <div class="modal-body">
+                <div class="cookie-type">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0; font-weight: 600;">Essential Cookies</label>
+                        <input type="checkbox" id="cookie-essential" checked disabled style="cursor: not-allowed;" />
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Required for basic website functionality. You
+                        cannot disable these.</p>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 1rem 0;" />
+
+                <div class="cookie-type">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0; font-weight: 600;">Functional Cookies</label>
+                        <input type="checkbox" id="cookie-functional" checked />
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Remember your preferences and settings for a
+                        better experience.</p>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 1rem 0;" />
+
+                <div class="cookie-type">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0; font-weight: 600;">Analytics Cookies</label>
+                        <input type="checkbox" id="cookie-analytics" />
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Help us understand how you use the site to
+                        improve it.</p>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 1rem 0;" />
+
+                <div class="cookie-type">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0; font-weight: 600;">Marketing Cookies</label>
+                        <input type="checkbox" id="cookie-marketing" />
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: #aaa;">Enable personalized ads and content based on
+                        your interests.</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button class="btn ghost" id="cookieSettingsSave" style="grid-column: 1 / -1;">Save Preferences</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-inner">
+            <a href="/" class="brand">Cipher Lab</a>
+            <nav>
+                <a href="/">Home</a>
+                {% if current_user.is_authenticated %}
+                <a href="/dashboard">Dashboard</a>
+                {% if current_user.is_admin %}<a href="/admin">Admin</a>{% endif %}
+                <a href="/logout">Logout</a>
+                {% else %}
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert {{ category }}">
+            {% if category == "error" %}ERROR:{% elif category == "success" %}SUCCESS:{% else %}INFO:{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Cipher Lab – Encrypt. Learn. Experiment. | Built with security in mind.</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

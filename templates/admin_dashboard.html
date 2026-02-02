@@ -1,0 +1,368 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}Admin Panel - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header flex-between">
+        <div>
+            <h2>Admin Panel</h2>
+            <p class="text-secondary">Manage users, ciphers, and system activity.</p>
+        </div>
+        <a href="/logout" class="btn danger">Logout</a>
+    </div>
+    {% if current_user.admin_level == 'high' and not high_admin_key_set %}
+    <div class="alert warning" style="margin-top: 1rem;">High admin key is not configured. Set HIGH_ADMIN_KEY in .env.</div>
+    {% endif %}
+</div>
+
+<div class="grid" style="margin-top: 2rem;">
+    <div class="card stat-card">
+        <h4>Total Users</h4>
+        <div class="stat-value">{{ total_users }}</div>
+        <p class="text-muted">Registered accounts</p>
+    </div>
+    <div class="card stat-card">
+        <h4>Supported Ciphers</h4>
+        <div class="stat-value">{{ supported_total }}</div>
+        <p class="text-muted">Interactive encryption</p>
+    </div>
+    <div class="card stat-card">
+        <h4>Catalog Ciphers</h4>
+        <div class="stat-value">{{ catalog_total }}</div>
+        <p class="text-muted">Reference entries</p>
+    </div>
+    <div class="card stat-card">
+        <h4>Admins</h4>
+        <div class="stat-value">{{ standard_admin_count }}</div>
+        <p class="text-muted">Active admins (excluding high admin)</p>
+    </div>
+</div>
+
+<h3 class="section-title">User Management</h3>
+<div class="panel">
+    <form method="get" class="search-bar" style="margin-bottom: 1rem;">
+        <div class="search-input">
+            <input type="text" name="user_q" class="input" placeholder="Search users" value="{{ user_q }}" />
+        </div>
+        <button type="submit" class="btn primary">Search</button>
+    </form>
+
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Provider</th>
+                <th>Role</th>
+                {% if current_user.admin_level == 'high' %}
+                <th>Last Login</th>
+                <th>Last Seen</th>
+                <th>IP</th>
+                <th>Cookies</th>
+                {% endif %}
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in all_users %}
+            <tr>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td class="mono">{{ user.oauth_provider or 'password' }}</td>
+                <td>
+                    {% if user.is_admin %}
+                    <span class="chip primary">Admin</span>
+                    {% else %}
+                    <span class="chip">User</span>
+                    {% endif %}
+                </td>
+                {% if current_user.admin_level == 'high' %}
+                <td class="text-muted">{% if user.last_login_at %}{{ user.last_login_at.strftime("%Y-%m-%d %H:%M") }}{% else %}-{% endif %}</td>
+                <td class="text-muted">{% if user.last_seen_at %}{{ user.last_seen_at.strftime("%Y-%m-%d %H:%M") }}{% else %}-{% endif %}</td>
+                <td class="mono">{{ user.last_login_ip or '-' }}</td>
+                <td>
+                    {% set pref = cookie_prefs_by_user.get(user.id) %}
+                    {% if pref %}
+                        <span class="chip {% if pref.functional %}success{% else %}warning{% endif %}">F</span>
+                        <span class="chip {% if pref.analytics %}success{% else %}warning{% endif %}">A</span>
+                        <span class="chip {% if pref.marketing %}success{% else %}warning{% endif %}">M</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td>
+                    <div class="table-actions">
+                        {% if current_user.admin_level == 'high' %}
+                        <a href="/admin/users/{{ user.id }}" class="btn ghost" style="padding: 6px 10px;">View</a>
+                        {% else %}
+                        <span class="text-muted">View</span>
+                        {% endif %}
+                        {% if user.id != current_user.id %}
+                            {% if user.admin_level == 'high' %}
+                            <span class="text-muted">High admin</span>
+                            {% elif user.is_admin %}
+                            <form method="post" action="/admin/users/demote/{{ user.id }}" style="display: inline-flex;">
+                                <button class="btn outline" type="submit" style="padding: 6px 10px;">Demote</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="/admin/users/promote/{{ user.id }}" style="display: inline-flex; gap: 0.5rem;">
+                                {% if current_user.admin_level == 'high' %}
+                                <input type="password" name="high_admin_key" class="input input-mini" placeholder="High admin key" required />
+                                <button class="btn outline" type="submit" style="padding: 6px 10px;">Promote</button>
+                                {% else %}
+                                <button class="btn outline" type="submit" style="padding: 6px 10px;" disabled>Promote</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
+                            {% if user.admin_level != 'high' %}
+                            <form method="post" action="/admin/users/delete/{{ user.id }}" style="display: inline-flex;">
+                                <button class="btn danger" type="submit" style="padding: 6px 10px;" onclick="return confirm('Delete user?')">Delete</button>
+                            </form>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">You</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if current_user.admin_level == 'high' %}
+<h3 class="section-title">Cookie Consent Monitor</h3>
+<div class="panel">
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Anon ID</th>
+                <th>Choice</th>
+                <th>Prefs</th>
+                <th>IP</th>
+                <th>Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pref in cookie_prefs %}
+            <tr>
+                <td>
+                    {% if pref.user_id %}
+                        <a href="/admin/users/{{ pref.user_id }}">User {{ pref.user_id }}</a>
+                    {% else %}
+                        <span class="text-muted">Anonymous</span>
+                    {% endif %}
+                </td>
+                <td class="mono">{{ pref.anon_id or '-' }}</td>
+                <td>{{ pref.choice }}</td>
+                <td>
+                    <span class="chip {% if pref.functional %}success{% else %}warning{% endif %}">F</span>
+                    <span class="chip {% if pref.analytics %}success{% else %}warning{% endif %}">A</span>
+                    <span class="chip {% if pref.marketing %}success{% else %}warning{% endif %}">M</span>
+                </td>
+                <td class="mono">{{ pref.ip_address or '-' }}</td>
+                <td class="text-muted">{{ pref.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if current_user.admin_level == 'high' %}
+<h3 class="section-title">Recent Activity (All Users)</h3>
+<div class="panel">
+    {% if recent_activity %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Cipher</th>
+                <th>IP</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log, user in recent_activity %}
+            <tr>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ log.action }}</td>
+                <td class="mono">{{ log.cipher_name }}</td>
+                <td class="mono">{{ log.ip_address or '-' }}</td>
+                <td class="text-muted">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center" style="padding: 1rem;">No activity recorded yet.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<h3 class="section-title">Program New Cipher (Alias Builder)</h3>
+<div class="panel">
+    <form method="post" action="/admin/ciphers/create" class="grid-2">
+        <div>
+            <label>Slug (unique identifier)</label>
+            <input type="text" name="slug" class="input" placeholder="my-cipher" required />
+
+            <label>Name</label>
+            <input type="text" name="name" class="input" placeholder="My Custom Cipher" required />
+
+            <label>Description</label>
+            <textarea name="description" class="input" rows="3" placeholder="Brief description..."></textarea>
+
+            <label>Category</label>
+            <select name="category" class="input">
+                <option value="classic">Classic</option>
+                <option value="modern">Modern</option>
+                <option value="educational">Educational</option>
+                <option value="variant">Variant</option>
+            </select>
+        </div>
+        <div>
+            <label>Base Cipher (built-in slug)</label>
+            <input type="text" name="base_slug" class="input" placeholder="caesar" />
+
+            <label>Default Params (JSON)</label>
+            <textarea name="default_params" class="input" rows="6" placeholder='{"shift": 5}'></textarea>
+
+            <button type="submit" class="btn primary full-width" style="margin-top: 1rem;">Create Programmable Cipher</button>
+            <div class="alert info" style="margin-top: 1rem;">
+                This creates a new cipher that aliases an existing built-in cipher with preset params.
+            </div>
+        </div>
+    </form>
+</div>
+
+<h3 class="section-title">Cipher Management</h3>
+<div class="grid-2">
+    <div class="panel">
+        <h4>Create New Cipher</h4>
+        <form method="post" action="/admin/ciphers/create">
+            <label>Slug (unique identifier)</label>
+            <input type="text" name="slug" class="input" placeholder="my-cipher" required />
+
+            <label>Name</label>
+            <input type="text" name="name" class="input" placeholder="My Custom Cipher" required />
+
+            <label>Description</label>
+            <textarea name="description" class="input" rows="3" placeholder="Brief description..."></textarea>
+
+            <label>Category</label>
+            <select name="category" class="input">
+                <option value="classic">Classic</option>
+                <option value="modern">Modern</option>
+                <option value="educational">Educational</option>
+                <option value="variant">Variant</option>
+            </select>
+
+            <button type="submit" class="btn primary full-width" style="margin-top: 1rem;">Create Cipher</button>
+        </form>
+        <div class="alert info" style="margin-top: 1rem;">
+            Only built-in ciphers have working encrypt/decrypt. Custom ciphers require crypto_core updates.
+        </div>
+    </div>
+
+    <div class="panel">
+        <h4>Encryption Usage</h4>
+        {% if activity_stats %}
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>Cipher</th>
+                    <th>Uses</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cipher_name, count in activity_stats %}
+                <tr>
+                    <td class="mono">{{ cipher_name }}</td>
+                    <td><strong>{{ count }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center" style="padding: 2rem;">No activity yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<h3 class="section-title">Cipher Catalog</h3>
+<div class="panel">
+    <form method="get" class="search-bar" style="margin-bottom: 1rem;">
+        <div class="search-input">
+            <input type="text" name="cipher_q" class="input" placeholder="Search ciphers" value="{{ cipher_q }}" />
+        </div>
+        <button type="submit" class="btn primary">Search</button>
+    </form>
+
+    <div class="grid">
+        {% for cipher in cipher_defs %}
+        <div class="card {% if not cipher.supported %}card-muted{% endif %}">
+            <div class="card-head">
+                <h4>{{ cipher.name }}</h4>
+                {% if cipher.supported %}
+                <span class="chip success">Supported</span>
+                {% else %}
+                <span class="chip warning">Catalog</span>
+                {% endif %}
+            </div>
+            <p class="text-secondary">{{ cipher.description }}</p>
+            <div class="flex-between" style="gap: 1rem;">
+                <span class="chip subtle">{{ cipher.slug }}</span>
+                <form method="post" action="/admin/ciphers/delete/{{ cipher.id }}">
+                    <button type="submit" class="btn danger" style="padding: 6px 12px;" onclick="return confirm('Delete cipher?')">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if cipher_pages > 1 %}
+    <div class="pagination">
+        {% if cipher_page > 1 %}
+        <a class="btn ghost" href="/admin?cipher_q={{ cipher_q }}&cipher_page={{ cipher_page - 1 }}&user_q={{ user_q }}">Prev</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ cipher_page }} of {{ cipher_pages }}</span>
+        {% if cipher_page < cipher_pages %}
+        <a class="btn ghost" href="/admin?cipher_q={{ cipher_q }}&cipher_page={{ cipher_page + 1 }}&user_q={{ user_q }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<h3 class="section-title">Admin Activity Log</h3>
+<div class="panel">
+    {% if admin_logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in admin_logs %}
+            <tr>
+                <td><span class="chip primary">{{ log.action }}</span></td>
+                <td class="mono">{{ log.target }}</td>
+                <td class="text-secondary">{{ log.details[:60] }}{% if log.details|length > 60 %}...{% endif %}</td>
+                <td class="text-muted">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center" style="padding: 2rem;">No admin activity yet</p>
+    {% endif %}
+</div>
+{% endblock %}

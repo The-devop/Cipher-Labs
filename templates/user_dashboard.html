@@ -1,0 +1,92 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}Dashboard - Cipher Lab{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header flex-between">
+        <div>
+            <h2>Welcome, {{ current_user.username }}</h2>
+            <p class="text-secondary">Track activity, manage keys, and explore {{ cipher_total }} ciphers.</p>
+        </div>
+        <a href="/logout" class="btn ghost">Logout</a>
+    </div>
+</div>
+
+<div class="grid" style="margin-top: 2rem;">
+    <div class="card">
+        <h4>Classic Ciphers</h4>
+        <p class="text-secondary">Learn with historical ciphers like Caesar and Vigenere.</p>
+        <a href="/cipher/caesar" class="btn primary" style="margin-top: 1rem;">Try Caesar</a>
+    </div>
+
+    <div class="card">
+        <h4>AES-GCM</h4>
+        <p class="text-secondary">Modern authenticated encryption. Real security.</p>
+        <a href="/aes" class="btn primary" style="margin-top: 1rem;">Use AES</a>
+    </div>
+
+    <div class="card">
+        <h4>Full Cipher Catalog</h4>
+        <p class="text-secondary">Browse all {{ cipher_total }} ciphers with search and filters.</p>
+        <a href="/" class="btn primary" style="margin-top: 1rem;">Browse Catalog</a>
+    </div>
+</div>
+
+<h3 class="section-title">Featured Ciphers</h3>
+<div class="grid">
+    {% for cipher in cipher_defs %}
+    <a href="/cipher/{{ cipher.slug }}" class="card">
+        <h4>{{ cipher.name }}</h4>
+        <p class="text-secondary">{{ cipher.description }}</p>
+        <span class="chip primary">{{ cipher.slug }}</span>
+    </a>
+    {% endfor %}
+
+    <a href="/" class="card card-muted">
+        <h4>See the Full Catalog</h4>
+        <p class="text-secondary">Search thousands of variants and reference ciphers.</p>
+        <span class="chip">Browse</span>
+    </a>
+</div>
+
+<h3 class="section-title">Recent Activity</h3>
+<div class="panel">
+    {% if recent_logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Cipher</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in recent_logs %}
+            <tr>
+                <td>
+                    <span class="chip {% if log.action == 'encrypt' %}primary{% else %}secondary{% endif %}">
+                        {% if log.action == 'encrypt' %}Encrypt{% else %}Decrypt{% endif %}
+                    </span>
+                </td>
+                <td class="mono">{{ log.cipher_name }}</td>
+                <td>{{ log.input_length }} chars</td>
+                <td>
+                    {% if log.success %}
+                    <span class="log-success">OK</span>
+                    {% else %}
+                    <span class="log-error">Fail</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center" style="padding: 2rem;">No activity yet. Start encrypting.</p>
+    {% endif %}
+</div>
+{% endblock %}

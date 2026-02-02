@@ -1,0 +1,106 @@
+﻿{% extends "layout.html" %}
+
+{% block title %}Home - Cipher Lab{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Encrypt. Learn. Experiment.</h1>
+    <p>Master cryptography with interactive tools. Explore thousands of cipher variants and modern AES encryption.</p>
+    <div class="hero-actions">
+        {% if current_user.is_authenticated %}
+        <a href="/dashboard" class="btn primary">Go to Dashboard</a>
+        <a href="/aes" class="btn secondary">Use AES (Real Security)</a>
+        {% else %}
+        <a href="/register" class="btn primary">Get Started</a>
+        <a href="/login" class="btn secondary">Sign In</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="catalog-controls">
+    <form method="get" class="search-bar">
+        <div class="search-input">
+            <input type="text" name="q" class="input" placeholder="Search ciphers or slugs" value="{{ q }}" />
+        </div>
+        <select name="category" class="input select">
+            <option value="all" {% if category == "all" %}selected{% endif %}>All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat | title }}</option>
+            {% endfor %}
+        </select>
+        <select name="show" class="input select">
+            <option value="all" {% if show == "all" %}selected{% endif %}>All Ciphers ({{ total }})</option>
+            <option value="supported" {% if show == "supported" %}selected{% endif %}>Supported ({{ supported_total }})</option>
+        </select>
+        <button type="submit" class="btn primary">Search</button>
+    </form>
+    <div class="catalog-meta">Showing {{ ciphers|length }} of {{ total }} ciphers.</div>
+</section>
+
+    <div class="category-buttons">
+        <a class="btn outline" href="/?category=all&show={{ show }}">All Types</a>
+        <a class="btn outline" href="/?category=classic&show={{ show }}">Classic</a>
+        <a class="btn outline" href="/?category=variant&show={{ show }}">Variants</a>
+        <a class="btn outline" href="/?category=modern&show={{ show }}">Real Protection</a>
+        <a class="btn outline" href="/?category=educational&show={{ show }}">Educational</a>
+    </div>
+
+<section>
+    {% if ciphers %}
+    <div class="grid">
+        {% for cipher in ciphers %}
+        <a href="/cipher/{{ cipher.slug }}" class="card {% if not cipher.supported %}card-muted{% endif %}">
+            <div class="card-head">
+                <h3>{{ cipher.name }}</h3>
+                {% if cipher.supported %}
+                <span class="chip primary">Supported</span>
+                {% else %}
+                <span class="chip warning">Catalog</span>
+                {% endif %}
+            </div>
+            <p>{{ cipher.description }}</p>
+            <div class="card-foot">
+                <span class="chip subtle">{{ cipher.slug }}</span>
+                <span class="chip">{{ cipher.category }}</span>
+            </div>
+        </a>
+        {% endfor %}
+
+        <a href="/aes" class="card">
+            <div class="card-head">
+                <h3>AES-GCM Encryption</h3>
+                <span class="chip success">Supported</span>
+            </div>
+            <p>Modern authenticated encryption with password-based key derivation. Real security.</p>
+            <div class="card-foot">
+                <span class="chip subtle">aes-gcm</span>
+                <span class="chip">modern</span>
+            </div>
+        </a>
+    </div>
+    {% else %}
+    <div class="panel text-center">
+        <p class="text-muted">No ciphers matched your search.</p>
+    </div>
+    {% endif %}
+
+    {% if pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a class="btn ghost" href="/?q={{ q }}&show={{ show }}&category={{ category }}&page={{ page - 1 }}">Prev</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ page }} of {{ pages }}</span>
+        {% if page < pages %}
+        <a class="btn ghost" href="/?q={{ q }}&show={{ show }}&category={{ category }}&page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+
+<section class="notice">
+    <h3>Educational Purpose</h3>
+    <p class="text-secondary">
+        Classic ciphers are for learning and casual use. For real privacy and security, use AES-GCM encryption.
+    </p>
+</section>
+{% endblock %}
