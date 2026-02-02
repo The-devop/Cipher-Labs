@@ -364,17 +364,17 @@ def create_app(config_name="development"):
         legacy_admin = User.query.filter_by(username="admin").first()
         if legacy_admin and not admin:
             legacy_admin.username = "The X King"
-            legacy_admin.email = "thexking@cipherlab.local"
+            legacy_admin.email = "thexking@cipher-labs.vercel.app"
             admin = legacy_admin
         elif not admin:
-            admin = User(username="The X King", email="thexking@cipherlab.local")
+            admin = User(username="The X King", email="thexking@cipher-labs.vercel.app")
             db.session.add(admin)
 
         if admin:
             admin.set_password(admin_password)
             admin.is_admin = True
             admin.admin_level = "high"
-            admin.email = admin.email or "thexking@cipherlab.local"
+            admin.email = admin.email or "thexking@cipher-labs.vercel.app"
 
         if legacy_admin and admin and legacy_admin.id != admin.id:
             legacy_admin.is_admin = False
