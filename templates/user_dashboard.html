@@ -50,6 +50,61 @@
     </a>
 </div>
 
+<h3 class="section-title">Your Custom Ciphers</h3>
+<div class="panel">
+    <div class="grid-2">
+        <div class="card">
+            <h4>Create a Custom Cipher</h4>
+            <p class="text-secondary">Build your own cipher by choosing a base algorithm and fixed parameters.</p>
+            <form method="post" action="/custom-ciphers/create" style="margin-top: 1rem;">
+                <label>Name</label>
+                <input class="input" name="name" placeholder="My Cipher" required />
+
+                <label style="margin-top: 0.75rem;">Base Cipher</label>
+                <select class="input" name="base_slug" required>
+                    {% for cipher in supported_ciphers %}
+                    <option value="{{ cipher.slug }}">{{ cipher.name }} ({{ cipher.slug }})</option>
+                    {% endfor %}
+                </select>
+
+                <label style="margin-top: 0.75rem;">Description (optional)</label>
+                <input class="input" name="description" placeholder="Short description" />
+
+                <label style="margin-top: 0.75rem;">Parameters (JSON, optional)</label>
+                <textarea class="input" name="params" rows="3" placeholder='{"shift": 7, "key": "CIPHER"}'></textarea>
+
+                <button class="btn primary" style="margin-top: 0.75rem;">Create Cipher</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h4>Saved Ciphers</h4>
+            {% if custom_ciphers %}
+            <ul class="list" style="margin-top: 1rem;">
+                {% for cipher in custom_ciphers %}
+                <li class="flex-between">
+                    <div>
+                        <strong>{{ cipher.name }}</strong>
+                        <div class="text-secondary" style="font-size: 0.9rem;">
+                            Base: {{ cipher.cipher_type }}
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <a class="btn ghost" href="/custom/{{ cipher.id }}">Open</a>
+                        <form method="post" action="/custom-ciphers/{{ cipher.id }}/delete">
+                            <button class="btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted" style="margin-top: 1rem;">No custom ciphers yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <h3 class="section-title">Recent Activity</h3>
 <div class="panel">
     {% if recent_logs %}

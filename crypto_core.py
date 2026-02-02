@@ -2693,21 +2693,6 @@ def _dynamic_cipher_info(slug: str) -> Optional[dict]:
                 }
         return None
 
-    affine_match = re.match(r"^affine-a(\d+)-b(\d+)$", slug)
-    if affine_match:
-        a = int(affine_match.group(1))
-        b = int(affine_match.group(2))
-        if 0 <= b <= 25 and _mod_inverse(a, 26) != -1:
-            return {
-                "name": f"Affine a={a}, b={b}",
-                "description": "Affine cipher with fixed parameters.",
-                "encrypt": lambda text, a=a, b=b, **kw: affine_cipher(text, a=a, b=b),
-                "decrypt": lambda text, a=a, b=b, **kw: _affine_decrypt(text, a=a, b=b),
-                "params": [],
-                "param_types": {},
-            }
-        return None
-
     if slug.startswith("vigenere-key-"):
         key = slug.split("vigenere-key-", 1)[1].replace("-", "").upper()
         if key.isalpha():

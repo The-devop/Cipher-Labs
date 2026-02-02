@@ -6,6 +6,7 @@ import os
 import json
 import secrets
 import uuid
+from types import SimpleNamespace
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
@@ -137,6 +138,12 @@ def create_app(config_name="development"):
             suffix += 1
             candidate = f"{base[:20]}{suffix}"
         return candidate
+
+    def _slugify(value):
+        clean = "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-")
+        while "--" in clean:
+            clean = clean.replace("--", "-")
+        return clean[:50] or "custom-cipher"
 
     def _oauth_redirect_uri(provider):
         override = app.config.get("OAUTH_REDIRECT_BASE", "")
@@ -319,16 +326,11 @@ def create_app(config_name="development"):
                 supported=True,
             )
 
-        valid_affine_a = [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]
-        for a in valid_affine_a:
-            for b in range(0, 26):
-                add_cipher(
-                    slug=f"affine-a{a}-b{b}",
-                    name=f"Affine a={a}, b={b}",
-                    desc=f"Affine cipher with a={a}, b={b}.",
-                    category="variant",
-                    supported=True,
-                )
+        # Remove affine variants - only keep the base affine cipher
+        for slug, cipher in list(existing.items()):
+            if slug.startswith("affine-a") and "-b" in slug:
+                db.session.delete(cipher)
+                existing.pop(slug, None)
 
         def base26_key(index, length=3):
             alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -607,6 +609,7 @@ def create_app(config_name="development"):
         )
         cipher_total = CipherDefinition.query.count()
         custom_ciphers = CustomCipher.query.filter_by(user_id=current_user.id).all()
+        supported_ciphers = CipherDefinition.query.filter_by(supported=True).order_by(CipherDefinition.name).all()
         recent_logs = ActivityLog.query.filter_by(user_id=current_user.id).order_by(
             ActivityLog.timestamp.desc()
         ).limit(10).all()
@@ -616,8 +619,66 @@ def create_app(config_name="development"):
             cipher_defs=cipher_defs,
             cipher_total=cipher_total,
             custom_ciphers=custom_ciphers,
+            supported_ciphers=supported_ciphers,
             recent_logs=recent_logs
         )
+
+    @app.post("/custom-ciphers/create")
+    @login_required
+    def create_custom_cipher():
+        """Create a user-defined cipher alias"""
+        name = request.form.get("name", "").strip()
+        base_slug = request.form.get("base_slug", "").strip()
+        description = request.form.get("description", "").strip()
+        params_raw = request.form.get("params", "").strip()
+
+        if not name:
+            flash("Custom cipher name is required.", "error")
+            return redirect(url_for("dashboard"))
+        if not base_slug or not cc.cipher_exists(base_slug):
+            flash("Select a valid base cipher.", "error")
+            return redirect(url_for("dashboard"))
+
+        slug = _slugify(name)
+        params = {}
+        if params_raw:
+            try:
+                params = json.loads(params_raw)
+            except json.JSONDecodeError:
+                flash("Parameters must be valid JSON.", "error")
+                return redirect(url_for("dashboard"))
+
+        custom = CustomCipher(
+            user_id=current_user.id,
+            slug=slug,
+            name=name,
+            description=description,
+            cipher_type=base_slug,
+            parameters=json.dumps(params) if params else "{}",
+        )
+        db.session.add(custom)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Custom cipher name already exists. Try a different name.", "error")
+            return redirect(url_for("dashboard"))
+
+        flash("Custom cipher created.", "success")
+        return redirect(url_for("dashboard"))
+
+    @app.post("/custom-ciphers/<int:cipher_id>/delete")
+    @login_required
+    def delete_custom_cipher(cipher_id):
+        """Delete a custom cipher"""
+        custom_cipher = CustomCipher.query.filter_by(id=cipher_id, user_id=current_user.id).first()
+        if not custom_cipher:
+            flash("Custom cipher not found.", "error")
+            return redirect(url_for("dashboard"))
+        db.session.delete(custom_cipher)
+        db.session.commit()
+        flash("Custom cipher deleted.", "success")
+        return redirect(url_for("dashboard"))
     
     @app.get("/cipher/<slug>")
     def cipher_page(slug):
@@ -648,6 +709,39 @@ def create_app(config_name="development"):
             supported=supported,
             param_defaults=param_defaults,
         )
+
+    @app.get("/custom/<int:cipher_id>")
+    @login_required
+    def custom_cipher_page(cipher_id):
+        """Custom cipher detail page (user-defined)"""
+        custom_cipher = CustomCipher.query.filter_by(id=cipher_id, user_id=current_user.id).first()
+        if not custom_cipher:
+            flash("Custom cipher not found.", "error")
+            return redirect(url_for("dashboard"))
+
+        cipher_info = cc.get_cipher_info(custom_cipher.cipher_type)
+        if not cipher_info:
+            flash("Base cipher is unavailable.", "error")
+            return redirect(url_for("dashboard"))
+
+        try:
+            default_params = json.loads(custom_cipher.parameters or "{}")
+        except json.JSONDecodeError:
+            default_params = {}
+
+        cipher = SimpleNamespace(
+            slug=f"custom:{custom_cipher.id}",
+            name=custom_cipher.name,
+            description=custom_cipher.description or "Custom cipher based on a built-in algorithm.",
+        )
+
+        return render_template(
+            "cipher.html",
+            cipher=cipher,
+            cipher_info=cipher_info,
+            supported=True,
+            param_defaults=default_params,
+        )
     
     @app.get("/aes")
     def aes_page():
@@ -666,6 +760,22 @@ def create_app(config_name="development"):
         params = data.get("params", {})
         
         try:
+            if slug.startswith("custom:"):
+                try:
+                    custom_id = int(slug.split(":", 1)[1])
+                except ValueError:
+                    return jsonify({"ok": False, "error": "Invalid custom cipher."}), 400
+                custom_cipher = CustomCipher.query.filter_by(id=custom_id, user_id=current_user.id).first()
+                if not custom_cipher:
+                    return jsonify({"ok": False, "error": "Custom cipher not found."}), 404
+                if not cc.cipher_exists(custom_cipher.cipher_type):
+                    return jsonify({"ok": False, "error": "Base cipher unavailable."}), 400
+                base_params = json.loads(custom_cipher.parameters or "{}")
+                merged = {**base_params, **params}
+                result = cc.encrypt_with_cipher(custom_cipher.cipher_type, text, **merged)
+                log_activity("encrypt", custom_cipher.name, len(text), success=True, meta={"custom": custom_cipher.id})
+                return jsonify({"ok": True, "result": result})
+
             if not cc.cipher_exists(slug):
                 cipher_def = CipherDefinition.query.filter_by(slug=slug).first()
                 if cipher_def and not cipher_def.supported:
@@ -697,6 +807,22 @@ def create_app(config_name="development"):
         params = data.get("params", {})
         
         try:
+            if slug.startswith("custom:"):
+                try:
+                    custom_id = int(slug.split(":", 1)[1])
+                except ValueError:
+                    return jsonify({"ok": False, "error": "Invalid custom cipher."}), 400
+                custom_cipher = CustomCipher.query.filter_by(id=custom_id, user_id=current_user.id).first()
+                if not custom_cipher:
+                    return jsonify({"ok": False, "error": "Custom cipher not found."}), 404
+                if not cc.cipher_exists(custom_cipher.cipher_type):
+                    return jsonify({"ok": False, "error": "Base cipher unavailable."}), 400
+                base_params = json.loads(custom_cipher.parameters or "{}")
+                merged = {**base_params, **params}
+                result = cc.decrypt_with_cipher(custom_cipher.cipher_type, text, **merged)
+                log_activity("decrypt", custom_cipher.name, len(text), success=True, meta={"custom": custom_cipher.id})
+                return jsonify({"ok": True, "result": result})
+
             if not cc.cipher_exists(slug):
                 cipher_def = CipherDefinition.query.filter_by(slug=slug).first()
                 if cipher_def and not cipher_def.supported:
