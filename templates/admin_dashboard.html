@@ -60,6 +60,7 @@
                 <th>Last Seen</th>
                 <th>IP</th>
                 <th>Cookies</th>
+                <th>Actions</th>
                 {% endif %}
             </tr>
         </thead>
@@ -90,6 +91,23 @@
                         <span class="chip {% if pref.marketing %}success{% else %}warning{% endif %}">M</span>
                     {% else %}
                         <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.admin_level == 'high' %}
+                        <span class="text-muted">Protected</span>
+                    {% else %}
+                        <div class="btn-group">
+                            {% if not user.is_admin %}
+                            <form method="post" action="/admin/users/promote/{{ user.id }}">
+                                <input type="password" name="high_admin_key" class="input" placeholder="High admin key" required />
+                                <button class="btn success" type="submit">Promote</button>
+                            </form>
+                            {% endif %}
+                            <form method="post" action="/admin/users/delete/{{ user.id }}">
+                                <button class="btn danger" type="submit">Delete</button>
+                            </form>
+                        </div>
                     {% endif %}
                 </td>
                 {% endif %}
