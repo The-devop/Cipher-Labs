@@ -49,6 +49,12 @@ function getCookiePrefs() {
     }
 }
 
+function setCookie(name, value, days) {
+    const maxAge = days ? `; max-age=${days * 24 * 60 * 60}` : "";
+    const secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${name}=${encodeURIComponent(value)}${maxAge}; path=/; SameSite=Lax${secure}`;
+}
+
 function initCookieConsent() {
     const banner = document.getElementById("cookieConsent");
     const settingsModal = document.getElementById("cookieSettingsModal");
@@ -63,6 +69,22 @@ function initCookieConsent() {
         document.getElementById("cookie-functional").checked = prefs.functional ?? true;
         document.getElementById("cookie-analytics").checked = prefs.analytics ?? false;
         document.getElementById("cookie-marketing").checked = prefs.marketing ?? false;
+        banner.style.display = "none";
+        return;
+    }
+
+    const accountPrefs = window.cipherlabCookiePrefs;
+    if (accountPrefs) {
+        document.getElementById("cookie-functional").checked = accountPrefs.functional ?? true;
+        document.getElementById("cookie-analytics").checked = accountPrefs.analytics ?? false;
+        document.getElementById("cookie-marketing").checked = accountPrefs.marketing ?? false;
+        setCookie("cipherlab_cookie_choice", accountPrefs.choice || "custom", 365);
+        setCookie("cipherlab_cookie_prefs", JSON.stringify({
+            essential: true,
+            functional: !!accountPrefs.functional,
+            analytics: !!accountPrefs.analytics,
+            marketing: !!accountPrefs.marketing
+        }), 365);
         banner.style.display = "none";
         return;
     }

@@ -55,6 +55,24 @@ def create_app(config_name="development"):
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    @app.context_processor
+    def inject_cookie_prefs():
+        if current_user.is_authenticated:
+            pref = CookiePreference.query.filter_by(user_id=current_user.id).order_by(
+                CookiePreference.updated_at.desc()
+            ).first()
+            if pref:
+                return {
+                    "cookie_pref_payload": {
+                        "choice": pref.choice,
+                        "essential": bool(pref.essential),
+                        "functional": bool(pref.functional),
+                        "analytics": bool(pref.analytics),
+                        "marketing": bool(pref.marketing),
+                    }
+                }
+        return {"cookie_pref_payload": None}
+
     @app.before_request
     def track_presence():
         if current_user.is_authenticated:
@@ -938,6 +956,7 @@ def create_app(config_name="development"):
             "cipherlab_cookie_choice",
             choice,
             max_age=max_age,
+            path="/",
             samesite="Lax",
             secure=app.config.get("SESSION_COOKIE_SECURE", False),
         )
@@ -945,6 +964,7 @@ def create_app(config_name="development"):
             "cipherlab_cookie_prefs",
             json.dumps(prefs),
             max_age=max_age,
+            path="/",
             samesite="Lax",
             secure=app.config.get("SESSION_COOKIE_SECURE", False),
         )
@@ -952,6 +972,7 @@ def create_app(config_name="development"):
             "cipherlab_anon_id",
             anon_id,
             max_age=max_age,
+            path="/",
             samesite="Lax",
             secure=app.config.get("SESSION_COOKIE_SECURE", False),
             httponly=True,

@@ -144,6 +144,11 @@
         <p>Cipher Lab – Encrypt. Learn. Experiment. | Built with security in mind.</p>
     </footer>
 
+    {% if cookie_pref_payload %}
+    <script>
+        window.cipherlabCookiePrefs = {{ cookie_pref_payload | tojson }};
+    </script>
+    {% endif %}
     <script src="/static/app.js"></script>
 </body>
 
