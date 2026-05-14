@@ -2578,11 +2578,11 @@ CLASSIC_CIPHERS = {
     "trifid": {"name": "Trifid Cipher", "description": "Three-part substitution-transposition", "encrypt": trifid, "decrypt": lambda text, **kw: "Not supported", "params": ["key"], "param_types": {"key": "text"}},
     
     # ===== NUMBER SYSTEMS =====
-    "binary": {"name": "Binary Cipher", "description": "Convert to binary representation", "encrypt": binary_cipher, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
+    "binary": {"name": "Binary Cipher", "description": "Convert to binary representation", "encrypt": binary_cipher, "decrypt": binary_decrypt, "params": [], "param_types": {}},
     "octal": {"name": "Octal Cipher", "description": "Convert to octal representation", "encrypt": octal_cipher, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
-    "hexadecimal": {"name": "Hexadecimal Cipher", "description": "Convert to hex representation", "encrypt": hexadecimal_cipher, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
-    "base64-variant": {"name": "Base64 Variant", "description": "Base64-like encoding", "encrypt": base64_variant, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
-    "base32": {"name": "Base32 Cipher", "description": "Base32 encoding", "encrypt": base32_cipher, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
+    "hexadecimal": {"name": "Hexadecimal Cipher", "description": "Convert to hex representation", "encrypt": hexadecimal_cipher, "decrypt": hex_decrypt, "params": [], "param_types": {}},
+    "base64-variant": {"name": "Base64 Variant", "description": "Base64-like encoding", "encrypt": base64_variant, "decrypt": base64_decrypt, "params": [], "param_types": {}},
+    "base32": {"name": "Base32 Cipher", "description": "Base32 encoding", "encrypt": base32_cipher, "decrypt": lambda text, **kw: __import__('base64').b32decode(text).decode(), "params": [], "param_types": {}},
     
     # ===== SUBSTITUTION VARIANTS =====
     "homophonic": {"name": "Homophonic Substitution", "description": "Multiple ciphers for common letters", "encrypt": homophonic_simple, "decrypt": lambda text, **kw: "Not supported", "params": [], "param_types": {}},
