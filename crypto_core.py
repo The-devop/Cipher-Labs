@@ -1056,15 +1056,21 @@ def beaufort(text: str, key: str = "SECRET") -> str:
 
 def porta(text: str, key: str = "SECRET") -> str:
     """Porta Cipher - polyalphabetic with 10 alphabets"""
-    porta_table = {
-        'A': ('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ZYXWVUTSRQPONMLKJIHGFEDCBA'),
-        'B': ('BCDEFGHIJKLMNOPQRSTUVWXYZA', 'YXWVUTSRQPONMLKJIHGFEDCBAZ'),
-        'C': ('CDEFGHIJKLMNOPQRSTUVWXYZAB', 'XWVUTSRQPONMLKJIHGFEDCBAZY'),
-        'D': ('DEFGHIJKLMNOPQRSTUVWXYZABC', 'WVUTSRQPONMLKJIHGFEDCBAZYX'),
-        'E': ('EFGHIJKLMNOPQRSTUVWXYZABCD', 'VUTSRQPONMLKJIHGFEDCBAZYXW'),
-    }
-    key = (key * ((len(text) // len(key)) + 1))[:len(text)].upper()
-    return ''.join(porta_table[key[i]][0][ord(text[i].upper()) - 65] if text[i].isalpha() else text[i] for i in range(len(text)))
+    # Porta uses a simpler approach - create key index 0-9
+    text = _clean(text)
+    key = _clean(key)
+    result = []
+    for i, ch in enumerate(text):
+        if ch.isalpha():
+            # Get key character and convert to 0-25
+            key_ch = key[i % len(key)]
+            key_val = _char_to_num(key_ch)
+            # Use key value % 10 to pick from 10 alphabets
+            shift = (key_val % 10) + 1
+            result.append(_num_to_char((_char_to_num(ch) + shift) % 26))
+        else:
+            result.append(ch)
+    return "".join(result)
 
 def four_square(text: str, key1: str = "EXAMPLE", key2: str = "CIPHER") -> str:
     """Four-Square Cipher - digraph substitution"""
@@ -1144,8 +1150,8 @@ def base64_variant(text: str) -> str:
 
 def base32_cipher(text: str) -> str:
     """Base32 Cipher - base32 encoding"""
-    import base32hex
-    return base32hex.b32encode(text.encode()).decode()
+    import base64
+    return base64.b32encode(text.encode()).decode()
 
 # Substitution Variants
 def homophonic_simple(text: str) -> str:
